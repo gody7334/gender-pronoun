@@ -38,7 +38,6 @@ class OneCycle:
         self.n_step = None
         self.n_epoch = None
         self.steps_per_epoch = None
-        self.update_bot(*args, **kwargs)
 
     def update_bot(self,
         train_loader=None, val_loader=None,
@@ -83,6 +82,8 @@ class OneCycle:
                 param.requires_grad = True
 
     def train_one_cycle(self):
+        assert self.n_step is not None, "need to assign train step"
+
         self.bot.train(
             self.n_step,
             log_interval=self.steps_per_epoch // 20,
@@ -156,8 +157,19 @@ class BaseBot:
         '''
         return prediction
 
-    # override if needed (multiple criterion, multiple model output)
+    def metrics(self, outputs, targets):
+        '''
+        override if needed for different metrics
+        '''
+        criterion_scores = self.criterion(outputs, targets).data.cpu().numpy()
+        score = np.mean(criterion_scores)
+        return score
+
     def train_one_step(self, input_tensors, target):
+        '''
+        override if needed
+        ex: multiple criterion, multiple model output
+        '''
         self.model.train()
         assert self.model.training
 
@@ -166,6 +178,9 @@ class BaseBot:
 
         output = self.model(*input_tensors)
         batch_loss = self.criterion(self.extract_prediction(output), target)
+
+        # devide batch size to make train more stable,
+        # avg loss wont effected by batch size, so lr,
         avg_batch_loss = batch_loss/len(target)
         avg_batch_loss.backward()
 
@@ -177,8 +192,11 @@ class BaseBot:
                 clip_grad_norm_(self.model.parameters(), self.clip_grad)
             self.optimizer.step()
 
-    # override if needed (multiple criterion, multiple model output)#
     def eval_one_step(self, input_tensors, y_local):
+        '''
+        override if needed
+        ex: multiple criterion, multiple model output
+        '''
         self.eval_losses = []
         self.eval_weights = []
         input_tensors = [x.to(self.device) for x in input_tensors]

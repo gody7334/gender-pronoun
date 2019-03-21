@@ -102,7 +102,7 @@ class GAPDataLoader():
         self.bert_tokenizer()
         self.train_ds = GAPDataset(df_train, self.tokenizer)
         self.val_ds = GAPDataset(df_val, self.tokenizer)
-        self.test_ds = GAPDataset(df_test, self.tokenizer,labeled=False)
+        self.test_ds = GAPDataset(df_test, self.tokenizer,labeled=True)
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
