@@ -39,17 +39,19 @@ class Head(nn.Module):
 
     def forward(self, bert_outputs, offsets):
         assert bert_outputs.size(2) == self.bert_hidden_size
+
         spans_contexts = self.span_extractor(
-            bert_outputs,
-            offsets[:, :4].reshape(-1, 2, 2)
-        ).reshape(offsets.size()[0], -1)
-        return self.fc(torch.cat([
-            spans_contexts,
-            torch.gather(
-                bert_outputs, 1,
-                offsets[:, [4]].unsqueeze(2).expand(-1, -1, self.bert_hidden_size)
-            ).squeeze(1)
-        ], dim=1))
+                bert_outputs,
+                offsets[:, :4].reshape(-1, 2, 2)
+            ).reshape(offsets.size()[0], -1)
+        spans_prenoun_contexts = torch.cat([
+                spans_contexts,
+                torch.gather(
+                    bert_outputs, 1,
+                    offsets[:, [4]].unsqueeze(2).expand(-1, -1, self.bert_hidden_size)
+                ).squeeze(1)
+            ], dim=1)
+        return self.fc(spans_prenoun_contexts)
 
 class GAPModel(nn.Module):
     """The main model."""
