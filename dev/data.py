@@ -6,7 +6,7 @@ import torch.nn as nn
 from pytorch_pretrained_bert import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
 
-BERT_MODEL = 'bert-base-uncased'
+BERT_MODEL = 'bert-large-uncased'
 CASED = False
 
 def extract_target(df):

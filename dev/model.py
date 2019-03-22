@@ -14,12 +14,12 @@ class Head(nn.Module):
         )
         self.fc = nn.Sequential(
             nn.BatchNorm1d(bert_hidden_size * 7),
-            nn.Dropout(0.1),
-            nn.Linear(bert_hidden_size * 7, 48),
-            nn.ReLU(),
-            nn.BatchNorm1d(48),
             nn.Dropout(0.5),
-            nn.Linear(48, 3)
+            nn.Linear(bert_hidden_size * 7, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.5),
+            nn.Linear(128, 3)
         )
         for i, module in enumerate(self.fc):
             if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d)):

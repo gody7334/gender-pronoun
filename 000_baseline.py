@@ -74,7 +74,8 @@ class GAPPipeline:
                 None,
                 None,
                 None,
-                [8,128,128]
+                None,
+                # [8,128,128]
                 ]
         self.stage_scheduler = [
                 "Default Triangular",
@@ -88,7 +89,8 @@ class GAPPipeline:
                 [self.model.head],
                 [self.model.head],
                 [self.model.head],
-                [self.model.head, self.model.bert.encoder]
+                [self.model.head],
+                # [self.model.head, self.model.bert.encoder]
                 ]
 
         if mode=="EXP":
