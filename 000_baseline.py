@@ -171,15 +171,12 @@ class GAPPipeline:
         self.bot.load_model(target_path)
         outputs, targets =  self.bot.predict(self.gapdl.test_loader, return_y=True)
         score = self.bot.metrics(outputs, targets)
-        import ipdb; ipdb.set_trace();
-        return score
-
 
 if __name__ == '__main__':
     G.logger.info( '%s: calling main function ... ' % os.path.basename(__file__))
 
     gappl = GAPPipeline()
-    # gappl.do_cycles_train()
-    score = gappl.do_prediction()
+    gappl.do_cycles_train()
+    # gappl.do_prediction()
 
     G.logger.info('success!')

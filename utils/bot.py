@@ -163,6 +163,7 @@ class BaseBot:
         '''
         criterion_scores = self.criterion(outputs, targets).data.cpu().numpy()
         score = np.mean(criterion_scores)
+        G.logger.info( 'test dataset metric %.6f ', score)
         return score
 
     def train_one_step(self, input_tensors, target):

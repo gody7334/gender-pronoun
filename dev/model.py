@@ -1,20 +1,25 @@
 import torch
 import torch.nn as nn
 from pytorch_pretrained_bert.modeling import BertModel
+from allennlp.modules.span_extractors import SelfAttentiveSpanExtractor, EndpointSpanExtractor
 
 class Head(nn.Module):
     """The MLP submodule"""
     def __init__(self, bert_hidden_size: int):
         super().__init__()
         self.bert_hidden_size = bert_hidden_size
+        # self.span_extractor = SelfAttentiveSpanExtractor(bert_hidden_size)
+        self.span_extractor = EndpointSpanExtractor(
+            bert_hidden_size, "x,y,x*y"
+        )
         self.fc = nn.Sequential(
-            nn.BatchNorm1d(bert_hidden_size * 3),
-            nn.Dropout(0.5),
-            nn.Linear(bert_hidden_size * 3, 512),
+            nn.BatchNorm1d(bert_hidden_size * 7),
+            nn.Dropout(0.1),
+            nn.Linear(bert_hidden_size * 7, 48),
             nn.ReLU(),
-            nn.BatchNorm1d(512),
+            nn.BatchNorm1d(48),
             nn.Dropout(0.5),
-            nn.Linear(512, 3)
+            nn.Linear(48, 3)
         )
         for i, module in enumerate(self.fc):
             if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d)):
@@ -34,11 +39,17 @@ class Head(nn.Module):
 
     def forward(self, bert_outputs, offsets):
         assert bert_outputs.size(2) == self.bert_hidden_size
-        extracted_outputs = bert_outputs.gather(
-            1, offsets.unsqueeze(2).expand(-1, -1, bert_outputs.size(2))
-        ).view(bert_outputs.size(0), -1)
-        return self.fc(extracted_outputs)
-
+        spans_contexts = self.span_extractor(
+            bert_outputs,
+            offsets[:, :4].reshape(-1, 2, 2)
+        ).reshape(offsets.size()[0], -1)
+        return self.fc(torch.cat([
+            spans_contexts,
+            torch.gather(
+                bert_outputs, 1,
+                offsets[:, [4]].unsqueeze(2).expand(-1, -1, self.bert_hidden_size)
+            ).squeeze(1)
+        ], dim=1))
 
 class GAPModel(nn.Module):
     """The main model."""
