@@ -12,7 +12,7 @@ DISCRIPTION='create baseline'
 gpu_id = '0'
 G(EXPERIMENT, DISCRIPTION, gpu_id)
 
-mode="EXP"
+mode="DEV"
 
 ##################################################
 
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     G.logger.info( '%s: calling main function ... ' % os.path.basename(__file__))
 
     gappl = GAPPipeline()
-    # gappl.do_cycles_train()
-    score = gappl.do_prediction()
+    gappl.do_cycles_train()
+    # score = gappl.do_prediction()
 
     G.logger.info('success!')
