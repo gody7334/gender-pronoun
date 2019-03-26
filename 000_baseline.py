@@ -12,7 +12,7 @@ DISCRIPTION='create baseline'
 gpu_id = '0'
 G(EXPERIMENT, DISCRIPTION, gpu_id)
 
-mode="DEV"
+mode="EXP"
 
 ##################################################
 
