@@ -64,6 +64,13 @@ class GAPModel(nn.Module):
         return head_outputs
 
 class GAPModel_CheckPoint(GAPModel):
+    '''
+    make bert modules as check point module,
+    train will run twice on this module
+    remove dropout ratio (prob=0.0), otherwise,
+    second run will change dropout node, different from frist run nodes,
+    so gradient from first run will be wrong
+    '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_dropout_prob(self.bert, prob=0.0)
