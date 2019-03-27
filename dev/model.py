@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint as checkpoint
 from pytorch_pretrained_bert.modeling import BertModel
 
 class Head(nn.Module):
@@ -10,11 +11,11 @@ class Head(nn.Module):
         self.fc = nn.Sequential(
             nn.BatchNorm1d(bert_hidden_size * 3),
             nn.Dropout(0.5),
-            nn.Linear(bert_hidden_size * 3, 512),
+            nn.Linear(bert_hidden_size * 3, 256),
             nn.ReLU(),
-            nn.BatchNorm1d(512),
+            nn.BatchNorm1d(256),
             nn.Dropout(0.5),
-            nn.Linear(512, 3)
+            nn.Linear(256, 3)
         )
         for i, module in enumerate(self.fc):
             if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d)):
@@ -61,3 +62,4 @@ class GAPModel(nn.Module):
             token_type_ids=None, output_all_encoded_layers=False)
         head_outputs = self.head(bert_outputs, offsets.to(self.device))
         return head_outputs
+

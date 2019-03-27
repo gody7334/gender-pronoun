@@ -29,7 +29,14 @@ class OneCycle:
     run one cycle policy,
     advantage of this policy is,
     it can reset many paramenter to fine tune model,
+
     epoch: will be converted into n_step
+
+    freeze_layers[] and unfreeze_layers[]:
+        will unfreeze(freeze) all layers, then freeze(unfreeze) specific layers
+        if both empty, will unfreeze all layers
+        cannot have layers in both [] at the same time
+
     TODO diffrentiate learning rate
     """
 
@@ -42,12 +49,14 @@ class OneCycle:
     def update_bot(self,
         train_loader=None, val_loader=None,
         optimizer=None, criterion=None, scheduler=None,
-        pretrained_path='', unfreeze_layers=[], unfreeze_all=False,
+        pretrained_path='', unfreeze_layers=[], freeze_layers=[],
         lrs=[], n_epoch=None, n_step=None, stage='',
         accu_gradient_step=None):
 
-        assert len(unfreeze_layers) != 0 or unfreeze_all is True, "no layers will be trained"
+        assert len(unfreeze_layers) == 0 or len(freeze_layers) ==0, \
+                "unfreeze_layers[] and freeze_layers[] can only choose one"
         assert n_epoch is not None or n_step is not None, "need to assign train step"
+
         self.n_step = n_step
         self.n_epoch = n_epoch
 
@@ -73,13 +82,24 @@ class OneCycle:
             else:
                 self.bot.scheduler=scheduler; print('reset scheduler: '+ str(scheduler));
 
-        if unfreeze_all is False:
+        '''
+        1. freeze all then freeze some layer or
+        2. unfreeze all then freeze some layers or
+        3. unfreeze all layers
+        '''
+        if len(unfreeze_layers) > 0:
             for param in self.bot.model.parameters():
                 param.requires_grad = False
             self.bot.set_trainable(unfreeze_layers, True)
-        else:
+        elif len(freeze_layers) > 0:
             for param in self.bot.model.parameters():
                 param.requires_grad = True
+            self.bot.set_trainable(freeze_layers, False)
+        elif len(unfreeze_layers) == 0 and len(freeze_layers) == 0:
+            for param in self.bot.model.parameters():
+                param.requires_grad = True
+
+
 
     def train_one_cycle(self):
         assert self.n_step is not None, "need to assign train step"
@@ -220,6 +240,13 @@ class BaseBot:
             assert Path(target_path).exists()
 
     def set_trainable(self, l, b):
+        '''
+        set module in a layers gradient
+        mean we can point what kind of module in a layer should be adjust
+        l: (layers, layers_class=nn.Module)
+        b: set trainable or not
+        '''
+        module = None
         def children(m):
             return m if isinstance(m, (list, tuple)) else list(m.children())
 
@@ -230,14 +257,16 @@ class BaseBot:
 
         def apply_leaf(m, f):
             c = children(m)
-            if isinstance(m, nn.Module):
+            if isinstance(m, module):
                 f(m)
             if len(c) > 0:
                 for l in c:
                     apply_leaf(l, f)
 
-        for g in l:
+        for g, mod in l:
+            module = mod
             apply_leaf(g, lambda m: set_trainable_attr(m, b))
+
 
     def lr_finder(self, end_lr=10, num_iter=100, img_path='./'):
         print('Start finding LR')

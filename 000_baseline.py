@@ -25,8 +25,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.utils.data import Dataset, DataLoader
+from torch.nn.modules.batchnorm import _BatchNorm
+from pytorch_pretrained_bert.modeling import BertModel, BertLayerNorm
 
 from utils.bot import OneCycle
 from utils.lr_finder import LRFinder
@@ -62,55 +64,72 @@ class GAPPipeline:
         self.set_cycles_train_params()
 
     def set_cycles_train_params(self):
-        self.stage_optimizer = [
-                Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
-                ]
-        self.stage_batch_size = [
-                None,
-                None,
-                None,
-                None,
-                [8,128,128]
-                ]
-        self.stage_scheduler = [
-                "Default Triangular",
-                "Default Triangular",
-                "Default Triangular",
-                "Default Triangular",
-                "Default Triangular",
-                ]
-        self.stage_unfreeze_layers = [
-                [self.model.head],
-                [self.model.head],
-                [self.model.head],
-                [self.model.head],
-                [self.model.head, self.model.bert.encoder]
-                ]
-
-        if mode=="EXP":
-            self.stage_epoch = [5,10,20,20,20]
-        elif mode=="DEV":
-            self.stage_epoch = [1,1,1,1,1]
+        self.stage_params = \
+        [
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
+                    'batch_size': [20,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'freeze_layers': [],
+                    'accu_gradient_step': None,
+                    'epoch': 5 if mode=="EXP" else 1,
+                },
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
+                    'batch_size': [20,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'freeze_layers': [],
+                    'accu_gradient_step': None,
+                    'epoch': 10 if mode=="EXP" else 1,
+                },
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
+                    'batch_size': [20,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'freeze_layers': [],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
+                    'batch_size': [20,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'freeze_layers': [],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
+                    'batch_size': [2,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+        ]
 
     def do_cycles_train(self):
         stage=0
-        while(stage<len(self.stage_epoch)):
+        while(stage<len(self.stage_params)):
+            params = self.stage_params[stage]
             G.logger.info("Start stage %s", str(stage))
 
-            if self.stage_batch_size[stage] is not None:
+            if params['batch_size'] is not None:
                 self.gapdl.update_batch_size(
-                        train_size=self.stage_batch_size[stage][0],
-                        val_size=self.stage_batch_size[stage][1],
-                        test_size=self.stage_batch_size[stage][2])
+                        train_size=params['batch_size'][0],
+                        val_size=params['batch_size'][1],
+                        test_size=params['batch_size'][2])
 
-            self.oc.update_bot(optimizer = self.stage_optimizer[stage],
-                    scheduler=self.stage_scheduler[stage],
-                    unfreeze_layers=self.stage_unfreeze_layers[stage],
-                    n_epoch=self.stage_epoch[stage],
+            self.oc.update_bot(optimizer = params['optimizer'],
+                    scheduler=params['scheduler'],
+                    unfreeze_layers=params['unfreeze_layers'],
+                    freeze_layers=params['freeze_layers'],
+                    n_epoch=params['epoch'],
                     stage=str(stage),
                     train_loader=self.gapdl.train_loader,
                     val_loader=self.gapdl.val_loader,
@@ -118,7 +137,7 @@ class GAPPipeline:
             self.oc.train_one_cycle()
             stage+=1
 
-            if mode=="DEV" and stage==3:
+            if mode=="DEV" and stage==5:
                 break
 
     def do_cycles_train_old(self):
