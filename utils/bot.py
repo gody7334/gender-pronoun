@@ -271,7 +271,6 @@ class BaseBot:
             module = mod
             apply_leaf(g, lambda m: set_trainable_attr(m, b))
 
-
     def lr_finder(self, end_lr=10, num_iter=100, img_path='./'):
         print('Start finding LR')
         lr_finder = LRFinder(self.model, self.optimizer, self.criterion, device=("cuda:0"))
