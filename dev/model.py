@@ -63,3 +63,39 @@ class GAPModel(nn.Module):
         head_outputs = self.head(bert_outputs, offsets.to(self.device))
         return head_outputs
 
+class GAPModel_CheckPoint(GAPModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_dropout_prob(self.bert, prob=0.0)
+
+    def check_point(self, module):
+        def custom_forward(*inputs):
+            inputs = module(inputs[0], attention_mask=(inputs[0]>0).long(),
+                    token_type_ids=None, output_all_encoded_layers=False)
+            return inputs
+        return custom_forward
+
+    def forward(self, token_tensor, offsets):
+        token_tensor = token_tensor.to(self.device)
+        bert_outputs, _ = checkpoint.checkpoint(self.check_point(self.bert), token_tensor)
+        head_outputs = self.head(bert_outputs, offsets.to(self.device))
+        return head_outputs
+
+    def set_dropout_prob(self, m, prob=0.0):
+        '''
+        m: node start to search
+        '''
+        def children(m):
+            return m if isinstance(m, (list, tuple)) else list(m.children())
+
+        def apply_leaf(m, f):
+            c = children(m)
+            if isinstance(m, nn.modules.dropout._DropoutNd):
+                m.p = prob
+            if len(c) > 0:
+                for l in c:
+                    apply_leaf(l, f)
+
+        apply_leaf(m, prob)
+
+

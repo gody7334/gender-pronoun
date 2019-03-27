@@ -43,7 +43,7 @@ from dev.model import *
 class GAPPipeline:
     def __init__(self):
         G.logger.info("load model")
-        self.model = GAPModel(BERT_MODEL, torch.device("cuda:0"))
+        self.model = GAPModel_CheckPoint(BERT_MODEL, torch.device("cuda:0"))
 
         G.logger.info("load gapdl")
         self.gapdl = GAPDataLoader()
@@ -77,34 +77,34 @@ class GAPPipeline:
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [6,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
-                    'freeze_layers': [],
+                    'unfreeze_layers': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
                     'accu_gradient_step': None,
                     'epoch': 10 if mode=="EXP" else 1,
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [6,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
-                    'freeze_layers': [],
+                    'unfreeze_layers': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
                     'accu_gradient_step': None,
                     'epoch': 20 if mode=="EXP" else 1,
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [6,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
-                    'freeze_layers': [],
+                    'unfreeze_layers': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
                     'accu_gradient_step': None,
                     'epoch': 20 if mode=="EXP" else 1,
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
-                    'batch_size': [2,128,128],
+                    'batch_size': [6,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [],
                     'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
