@@ -243,6 +243,10 @@ class BaseBot:
         '''
         set module in a layers gradient
         mean we can point what kind of module in a layer should be adjust
+        can check nn.Module, _BatchNorm, BertLayerNorm..... any layer type
+        beware, layer type should be the last node, cannot have other Module,
+        otherwise, check will break
+
         l: (layers, layers_class=nn.Module)
         b: set trainable or not
         '''
