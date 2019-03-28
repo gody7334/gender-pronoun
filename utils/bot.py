@@ -50,6 +50,7 @@ class OneCycle:
         train_loader=None, val_loader=None,
         optimizer=None, criterion=None, scheduler=None,
         pretrained_path='', unfreeze_layers=[], freeze_layers=[],
+        dropout_ratio=[],
         lrs=[], n_epoch=None, n_step=None, stage='',
         accu_gradient_step=None):
 
@@ -99,7 +100,9 @@ class OneCycle:
             for param in self.bot.model.parameters():
                 param.requires_grad = True
 
-
+        if len(dropout_ratio):
+            for m, p in dropout_ratio:
+                self.bot.model.set_dropout_prob(m, p)
 
     def train_one_cycle(self):
         assert self.n_step is not None, "need to assign train step"
@@ -201,7 +204,7 @@ class BaseBot:
 
         # devide batch size to make train more stable,
         # avg loss wont effected by batch size, so lr,
-        avg_batch_loss = batch_loss/len(target)
+        avg_batch_loss = batch_loss/(len(target)*self.accu_gradient_step)
         avg_batch_loss.backward()
 
         self.train_losses.append(batch_loss.data.cpu().numpy())

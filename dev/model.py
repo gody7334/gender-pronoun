@@ -63,6 +63,24 @@ class GAPModel(nn.Module):
         head_outputs = self.head(bert_outputs, offsets.to(self.device))
         return head_outputs
 
+    def set_dropout_prob(self, m, prob=0.0):
+        '''
+        m: node start to search
+        '''
+        def children(m):
+            return m if isinstance(m, (list, tuple)) else list(m.children())
+
+        def apply_leaf(m, f):
+            c = children(m)
+            if isinstance(m, nn.modules.dropout._DropoutNd):
+                m.p = prob
+            if len(c) > 0:
+                for l in c:
+                    apply_leaf(l, f)
+
+        apply_leaf(m, prob)
+
+
 class GAPModel_CheckPoint(GAPModel):
     '''
     make bert modules as check point module,
@@ -87,22 +105,5 @@ class GAPModel_CheckPoint(GAPModel):
         bert_outputs, _ = checkpoint.checkpoint(self.check_point(self.bert), token_tensor)
         head_outputs = self.head(bert_outputs, offsets.to(self.device))
         return head_outputs
-
-    def set_dropout_prob(self, m, prob=0.0):
-        '''
-        m: node start to search
-        '''
-        def children(m):
-            return m if isinstance(m, (list, tuple)) else list(m.children())
-
-        def apply_leaf(m, f):
-            c = children(m)
-            if isinstance(m, nn.modules.dropout._DropoutNd):
-                m.p = prob
-            if len(c) > 0:
-                for l in c:
-                    apply_leaf(l, f)
-
-        apply_leaf(m, prob)
 
 
