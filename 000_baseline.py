@@ -66,7 +66,7 @@ class GAPPipeline:
 
         G.logger.info("create onecycle")
         self.oc = OneCycle(self.bot)
-        self.stage_params = PipelineParams(self.model).decrease_dropout()
+        self.stage_params = PipelineParams(self.model).increase_dropout()
 
     def do_cycles_train(self):
         stage=0
@@ -175,7 +175,7 @@ class PipelineParams():
             ]
         return self.params
 
-    def decrease_dropout(self):
+    def increase_dropout(self):
         '''
         remove BERT dropout, if don't train BERT
         slowly decrease dropout ratio in HEAD when finetune
@@ -185,7 +185,7 @@ class PipelineParams():
             [
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [80,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -195,7 +195,7 @@ class PipelineParams():
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [80,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -205,36 +205,36 @@ class PipelineParams():
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [80,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
-                    'dropout_ratio': [(self.model.bert, 0.0),
-                                      (self.model.head, 0.25)],
+                    'dropout_ratio': [(self.model.bert, 0.00),
+                                      (self.model.head, 0.55)],
                     'accu_gradient_step': None,
                     'epoch': 10 if mode=="EXP" else 1,
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [80,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
-                    'dropout_ratio':  [(self.model.bert, 0.0),
-                                      (self.model.head, 0.25)],
+                    'dropout_ratio':  [(self.model.bert, 0.00),
+                                      (self.model.head, 0.55)],
                     'accu_gradient_step': None,
-                    'epoch': 20 if mode=="EXP" else 1,
+                    'epoch': 10 if mode=="EXP" else 1,
                 },
                 {
                     'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
-                    'batch_size': [20,128,128],
+                    'batch_size': [80,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
                     'dropout_ratio':  [(self.model.bert, 0.0),
-                                      (self.model.head, 0.1)],
+                                      (self.model.head, 0.6)],
                     'accu_gradient_step': None,
-                    'epoch': 20 if mode=="EXP" else 1,
+                    'epoch': 10 if mode=="EXP" else 1,
                 },
             ]
         return self.params
