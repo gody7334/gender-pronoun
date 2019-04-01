@@ -5,9 +5,13 @@ import torch
 import torch.nn as nn
 from pytorch_pretrained_bert import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
+from utils.project import Global as G
 
 BERT_MODEL = 'bert-large-uncased'
 CASED = False
+
+G.logger.info("BERT_MODEL %s", BERT_MODEL)
+G.logger.info("CASED %s", str(CASED))
 
 df_train = pd.read_csv("~/gender-pronoun/input/gap-test.tsv", delimiter="\t")
 df_val = pd.read_csv("~/gender-pronoun/input/gap-validation.tsv", delimiter="\t")
