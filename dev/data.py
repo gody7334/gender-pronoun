@@ -7,7 +7,7 @@ from pytorch_pretrained_bert import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
 from utils.project import Global as G
 
-BERT_MODEL = 'bert-large-uncased'
+BERT_MODEL = 'bert-base-uncased'
 CASED = False
 
 G.logger.info("BERT_MODEL %s", BERT_MODEL)

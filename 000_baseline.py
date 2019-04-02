@@ -68,7 +68,7 @@ class GAPPipeline:
 
         G.logger.info("create onecycle")
         self.oc = OneCycle(self.bot)
-        self.stage_params = PipelineParams(self.model).baseline()
+        self.stage_params = PipelineParams(self.model).finetune_bert()
 
     def do_cycles_train(self):
         stage=0
@@ -589,7 +589,7 @@ class PipelineParams():
                         [{'params':self.model.head.parameters(),'lr':1e-5},
                          {'params':self.model.bert.parameters(),'lr':1e-6},],
                         weight_decay=1e-3),
-                    'batch_size': [6,128,128],
+                    'batch_size': [10,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [],
                     'dropout_ratio': [],
@@ -597,6 +597,34 @@ class PipelineParams():
                     'accu_gradient_step': None,
                     'epoch': 20 if mode=="EXP" else 1,
                 },
+                {
+                    'optimizer': Adam(
+                        [{'params':self.model.head.parameters(),'lr':1e-5},
+                         {'params':self.model.bert.parameters(),'lr':1e-6},],
+                        weight_decay=1e-3),
+                    'batch_size': [10,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [],
+                    'dropout_ratio': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+
+                {
+                    'optimizer': Adam(
+                        [{'params':self.model.head.parameters(),'lr':1e-5},
+                         {'params':self.model.bert.parameters(),'lr':1e-6},],
+                        weight_decay=1e-3),
+                    'batch_size': [10,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [],
+                    'dropout_ratio': [],
+                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+
             ]
         return self.params
 
@@ -605,9 +633,9 @@ if __name__ == '__main__':
     G.logger.info( '%s: calling main function ... ' % os.path.basename(__file__))
 
     gappl = GAPPipeline()
-    gappl.do_cycles_train()
+    # gappl.do_cycles_train()
 
-    # target_path = '/home/gody7334/gender-pronoun/input/result/000_BASELINE/2019-03-29_09-50-11/check_point/stage4_snapshot_basebot_0.400825.pth'
-    # gappl.do_prediction(target_path)
+    target_path = '/home/gody7334/gender-pronoun/input/result/000_BASELINE/2019-03-21_00-27-14/check_point/stage4_snapshot_basebot_0.506462.pth'
+    gappl.do_prediction(target_path)
 
     G.logger.info('success!')
