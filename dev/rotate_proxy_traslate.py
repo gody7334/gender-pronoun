@@ -20,17 +20,17 @@ class GAPdf:
         # self.middle_lang = ['nl','fi','el','hi','it','la','pl','ru','es','sv','tr','ja','zn-CN']
         self.middle_lang = ['nl','fr','de','es']
 
-        self.df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv")
-        self.df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv")
-        self.df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv")
-        self.sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
+        self.df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv",index_col=0)
+        self.df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv",index_col=0)
+        self.df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv",index_col=0)
+        self.sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv",index_col=False)
         assert self.sample_sub.shape[0] == self.df_test.shape[0]
 
         self.df_train_trans = None
         if os.path.isfile("/home/gody7334/gender-pronoun/input/dataset/trans-gap-development.csv"):
-            self.df_test_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv",index_col=0)
-            self.df_val_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv",index_col=0)
-            self.df_train_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv",index_col=0)
+            self.df_test_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv",index_col=False)
+            self.df_val_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv",index_col=False)
+            self.df_train_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv",index_col=False)
 
         self.process_df()
 
@@ -58,9 +58,9 @@ class GAPdf:
             # self.df_train = pd.concat([self.df_train_trans, self.df_train], ignore_index=True)
         # import ipdb; ipdb.set_trace();
 
-        self.df_train.to_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv")
-        self.df_val.to_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv")
-        self.df_test.to_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv")
+        self.df_train.to_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv",index=False)
+        self.df_val.to_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv",index=False)
+        self.df_test.to_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv",index=False)
 
     def get_proxies(self):
         url = 'https://free-proxy-list.net/'

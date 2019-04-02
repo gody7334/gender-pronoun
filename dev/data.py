@@ -22,10 +22,10 @@ def extract_target(df):
     print(df.target.value_counts())
     return df
 
-df_train = extract_target(pd.read_csv("~/gender-pronoun/input/gap-test.tsv", delimiter="\t"))
-df_val = extract_target(pd.read_csv("~/gender-pronoun/input/gap-validation.tsv", delimiter="\t"))
-df_test = extract_target(pd.read_csv("~/gender-pronoun/input/gap-development.tsv", delimiter="\t"))
-sample_sub = pd.read_csv("~/gender-pronoun/input/sample_submission_stage_1.csv")
+df_train = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv"))
+df_val = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv"))
+df_test = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv"))
+sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
 assert sample_sub.shape[0] == df_test.shape[0]
 
 def insert_tag(row):
