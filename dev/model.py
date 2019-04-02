@@ -2,24 +2,25 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from pytorch_pretrained_bert.modeling import BertModel
+from allennlp.modules.span_extractors import SelfAttentiveSpanExtractor, EndpointSpanExtractor
 
 class Head(nn.Module):
     """The MLP submodule"""
     def __init__(self, bert_hidden_size: int):
         super().__init__()
         self.bert_hidden_size = bert_hidden_size
+        # self.span_extractor = SelfAttentiveSpanExtractor(bert_hidden_size)
+        self.span_extractor = EndpointSpanExtractor(
+            bert_hidden_size, "x,y,x*y"
+        )
         self.fc = nn.Sequential(
-            nn.BatchNorm1d(bert_hidden_size * 3),
-            nn.Dropout(0.5),
-            nn.Linear(bert_hidden_size * 3, bert_hidden_size),
+            nn.BatchNorm1d(bert_hidden_size * 7),
+            nn.Dropout(0.1),
+            nn.Linear(bert_hidden_size * 7, 128),
             nn.ReLU(),
-            nn.BatchNorm1d(bert_hidden_size),
+            nn.BatchNorm1d(128),
             nn.Dropout(0.5),
-            nn.Linear(bert_hidden_size, bert_hidden_size),
-            nn.ReLU(),
-            nn.BatchNorm1d(bert_hidden_size),
-            nn.Dropout(0.5),
-            nn.Linear(bert_hidden_size, 3)
+            nn.Linear(128, 3)
         )
         for i, module in enumerate(self.fc):
             if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d)):
@@ -39,17 +40,24 @@ class Head(nn.Module):
 
     def forward(self, bert_outputs, offsets):
         assert bert_outputs.size(2) == self.bert_hidden_size
-        extracted_outputs = bert_outputs.gather(
-            1, offsets.unsqueeze(2).expand(-1, -1, bert_outputs.size(2))
-        ).view(bert_outputs.size(0), -1)
-        return self.fc(extracted_outputs)
-
+        spans_contexts = self.span_extractor(
+            bert_outputs,
+            offsets[:, :4].reshape(-1, 2, 2)
+        ).reshape(offsets.size()[0], -1)
+        return self.fc(torch.cat([
+            spans_contexts,
+            torch.gather(
+                bert_outputs, 1,
+                offsets[:, [4]].unsqueeze(2).expand(-1, -1, self.bert_hidden_size)
+            ).squeeze(1)
+        ], dim=1))
 
 class GAPModel(nn.Module):
     """The main model."""
-    def __init__(self, bert_model: str, device: torch.device):
+    def __init__(self, bert_model: str, device: torch.device, use_layer: int = -2):
         super().__init__()
         self.device = device
+        self.use_layer = use_layer
         if bert_model in ("bert-base-uncased", "bert-base-cased"):
             self.bert_hidden_size = 768
         elif bert_model in ("bert-large-uncased", "bert-large-cased"):
@@ -63,8 +71,8 @@ class GAPModel(nn.Module):
         token_tensor = token_tensor.to(self.device)
         bert_outputs, _ =  self.bert(
             token_tensor, attention_mask=(token_tensor > 0).long(),
-            token_type_ids=None, output_all_encoded_layers=False)
-        head_outputs = self.head(bert_outputs, offsets.to(self.device))
+            token_type_ids=None, output_all_encoded_layers=True)
+        head_outputs = self.head(bert_outputs[self.use_layer], offsets.to(self.device))
         return head_outputs
 
     def set_dropout_prob(self, m, prob=0.0):

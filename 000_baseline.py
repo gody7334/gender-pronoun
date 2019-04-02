@@ -49,7 +49,8 @@ class GAPPipeline:
         Accumulated Gradient need turn off BatchNorm
         '''
         G.logger.info("load model")
-        self.model = GAPModel_CheckPoint(BERT_MODEL, torch.device("cuda:0"))
+        # self.model = GAPModel_CheckPoint(BERT_MODEL, torch.device("cuda:0"))
+        self.model = GAPModel(BERT_MODEL, torch.device("cuda:0"))
 
         G.logger.info("load gapdl")
         self.gapdl = GAPDataLoader()
@@ -67,7 +68,7 @@ class GAPPipeline:
 
         G.logger.info("create onecycle")
         self.oc = OneCycle(self.bot)
-        self.stage_params = PipelineParams(self.model).unfreeze_bert_with_accu_gradient()
+        self.stage_params = PipelineParams(self.model).baseline()
 
     def do_cycles_train(self):
         stage=0

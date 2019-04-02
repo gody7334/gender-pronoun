@@ -1,5 +1,6 @@
 import os
 import time
+from random import shuffle
 import pandas as pd
 import numpy as np
 from googletrans import Translator
@@ -14,58 +15,22 @@ class GAPdf:
 
     def __init__(self):
         self.proxies = self.get_proxies()
-        self.proxies = self.proxies + [
-                '138.68.161.60:3128',
-                '138.68.161.14:8080',
-                '138.68.161.60:8080',
-                '138.68.165.154:3128',
-                '138.68.165.154:8080',
-                '138.68.173.29:3128',
-                '138.68.173.29:8080',
-                '139.59.169.246:3128',
-                '139.59.169.246:8080',
-                '142.93.34.45:3128',
-                '142.93.37.75:8080',
-                '159.65.92.98:8080',
-                '167.99.204.29:80',
-                '164.39.202.75:53281',
-                '176.35.250.108:8080',
-                '178.128.162.132:8080',
-                '178.128.168.122:8080',
-                '178.128.174.206:3128',
-                '185.181.9.70:3128',
-                '195.122.185.95:3128',
-                '198.50.172.160:1080',
-                '198.50.172.161:1080',
-                '198.50.172.163:1080',
-                '198.50.172.162:1080',
-                '198.50.172.164:1080',
-                '198.50.172.165:1080',
-                '198.50.172.166:1080',
-                '198.50.172.167:1080',
-                '206.189.112.106:3128',
-                '209.97.177.138:8080',
-                '209.97.180.46:8080',
-                '209.97.191.169:3128',
-                '46.101.1.221:80',
-                '5.148.128.44:8080',
-                '68.183.35.48:8080',
-                '68.183.41.244:8080',
-                '81.199.32.90:40045',
-                ]
+        shuffle(self.proxies)
         self.proxy_pool = cycle(self.proxies)
         # self.middle_lang = ['nl','fi','el','hi','it','la','pl','ru','es','sv','tr','ja','zn-CN']
         self.middle_lang = ['nl','fr','de','es']
 
-        self.df_train = pd.read_csv("~/gender-pronoun/input/gap-development.tsv", delimiter="\t")
-        self.df_val = pd.read_csv("~/gender-pronoun/input/gap-validation.tsv", delimiter="\t")
-        self.df_test = pd.read_csv("~/gender-pronoun/input/gap-test.tsv", delimiter="\t")
-        self.sample_sub = pd.read_csv("~/gender-pronoun/input/sample_submission_stage_1.csv")
+        self.df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv")
+        self.df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv")
+        self.df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv")
+        self.sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
         assert self.sample_sub.shape[0] == self.df_test.shape[0]
 
-        self.df_test_trans = pd.read_csv("~/gender-pronoun/input/gap-test-trans.csv",index_col=0)
-        self.df_val_trans = pd.read_csv("~/gender-pronoun/input/gap-validation-trans.csv",index_col=0)
-        self.df_train_trans = pd.read_csv("~/gender-pronoun/input/gap-development-trans.csv",index_col=0)
+        self.df_train_trans = None
+        if os.path.isfile("/home/gody7334/gender-pronoun/input/dataset/trans-gap-development.csv"):
+            self.df_test_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv",index_col=0)
+            self.df_val_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv",index_col=0)
+            self.df_train_trans = pd.read_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv",index_col=0)
 
         self.process_df()
 
@@ -81,19 +46,21 @@ class GAPdf:
         self.df_val['Text_bt'] = self.df_val['Text_tag'].map(self.translate)
         self.df_test['Text_bt'] = self.df_test['Text_tag'].map(self.translate)
 
-        self.df_train_trans = pd.concat([self.df_train_trans, self.df_train], join='inner', axis=1)
-        self.df_val_trans = pd.concat([self.df_val_trans, self.df_val], join='inner', axis=1)
-        self.df_test_trans = pd.concat([self.df_test_trans, self.df_test], join='inner', axis=1)
+        if self.df_train_trans is not None:
+            self.df_train = pd.concat([self.df_train_trans, self.df_train], ignore_index=True)
+            self.df_val = pd.concat([self.df_val_trans, self.df_val], ignore_index=True)
+            self.df_test = pd.concat([self.df_test_trans, self.df_test], ignore_index=True)
 
         # self.df_train = self.extract_target(self.df_train).sample(n=1)
         # self.df_train['Text_tag'] = self.df_train.apply(self.replace_tag,axis=1)
         # self.df_train['Text_bt'] = self.df_train['Text_tag'].map(self.translate)
-        # self.df_train_trans = pd.concat([self.df_train_trans, self.df_train])
+        # if self.df_train_trans is not None:
+            # self.df_train = pd.concat([self.df_train_trans, self.df_train], ignore_index=True)
         # import ipdb; ipdb.set_trace();
 
-        self.df_train_trans.to_csv("~/gender-pronoun/input/gap-development-trans.csv")
-        self.df_val_trans.to_csv("~/gender-pronoun/input/gap-validation-trans.csv")
-        self.df_test_trans.to_csv("~/gender-pronoun/input/gap-test-trans.csv")
+        self.df_train.to_csv("~/gender-pronoun/input/dataset/trans-gap-development.csv")
+        self.df_val.to_csv("~/gender-pronoun/input/dataset/trans-gap-validation.csv")
+        self.df_test.to_csv("~/gender-pronoun/input/dataset/trans-gap-test.csv")
 
     def get_proxies(self):
         url = 'https://free-proxy-list.net/'
@@ -105,6 +72,11 @@ class GAPdf:
                 #Grabbing IP and corresponding PORT
                 proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
                 proxies.append(proxy)
+
+        with open('./proxy_list.txt') as f:
+            content = f.readlines()
+        proxies = [x.strip() for x in content] + proxies
+
         return proxies
 
     def translate(self, text):
