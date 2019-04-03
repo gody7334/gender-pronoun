@@ -9,14 +9,14 @@ class Head(nn.Module):
     def __init__(self, bert_hidden_size: int):
         super().__init__()
         self.bert_hidden_size = bert_hidden_size
-        fc_size = 128
+        fc_size = 256
         # self.span_extractor = SelfAttentiveSpanExtractor(bert_hidden_size)
         self.span_extractor = EndpointSpanExtractor(
             bert_hidden_size, "x,y,x*y"
         )
         self.fc = nn.Sequential(
             nn.BatchNorm1d(bert_hidden_size * 7),
-            nn.Dropout(0.1),
+            nn.Dropout(0.5),
             nn.Linear(bert_hidden_size * 7, fc_size),
             nn.ReLU(),
             nn.BatchNorm1d(fc_size),

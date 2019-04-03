@@ -68,7 +68,7 @@ class GAPPipeline:
 
         G.logger.info("create onecycle")
         self.oc = OneCycle(self.bot)
-        self.stage_params = PipelineParams(self.model).finetune_bert()
+        self.stage_params = PipelineParams(self.model).baseline()
 
     def do_cycles_train(self):
         stage=0
@@ -161,7 +161,7 @@ class PipelineParams():
         '''
         simple step schedulre as baseline
         '''
-        adam = Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3)
+        adam = Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4)
         self.params = \
             [
                 {
@@ -186,7 +186,7 @@ class PipelineParams():
         self.params = \
             [
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
                     'batch_size': [40,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
@@ -249,8 +249,8 @@ class PipelineParams():
         self.params = \
             [
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                    'batch_size': [40,128,128],
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -259,8 +259,8 @@ class PipelineParams():
                     'epoch': 5 if mode=="EXP" else 1,
                 },
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3),
-                    'batch_size': [40,128,128],
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -269,8 +269,8 @@ class PipelineParams():
                     'epoch': 10 if mode=="EXP" else 1,
                 },
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [40,128,128],
+                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -279,8 +279,8 @@ class PipelineParams():
                     'epoch': 20 if mode=="EXP" else 1,
                 },
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-3),
-                    'batch_size': [40,128,128],
+                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -289,8 +289,8 @@ class PipelineParams():
                     'epoch': 20 if mode=="EXP" else 1,
                 },
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-3),
-                    'batch_size': [40,128,128],
+                    'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [(self.model.head, nn.Module)],
                     'freeze_layers': [],
@@ -589,7 +589,7 @@ class PipelineParams():
                         [{'params':self.model.head.parameters(),'lr':1e-5},
                          {'params':self.model.bert.parameters(),'lr':1e-6},],
                         weight_decay=1e-3),
-                    'batch_size': [10,128,128],
+                    'batch_size': [6,128,128],
                     'scheduler': "Default Triangular",
                     'unfreeze_layers': [],
                     'dropout_ratio': [],
@@ -597,34 +597,6 @@ class PipelineParams():
                     'accu_gradient_step': None,
                     'epoch': 20 if mode=="EXP" else 1,
                 },
-                {
-                    'optimizer': Adam(
-                        [{'params':self.model.head.parameters(),'lr':1e-5},
-                         {'params':self.model.bert.parameters(),'lr':1e-6},],
-                        weight_decay=1e-3),
-                    'batch_size': [10,128,128],
-                    'scheduler': "Default Triangular",
-                    'unfreeze_layers': [],
-                    'dropout_ratio': [],
-                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
-                    'accu_gradient_step': None,
-                    'epoch': 20 if mode=="EXP" else 1,
-                },
-
-                {
-                    'optimizer': Adam(
-                        [{'params':self.model.head.parameters(),'lr':1e-5},
-                         {'params':self.model.bert.parameters(),'lr':1e-6},],
-                        weight_decay=1e-3),
-                    'batch_size': [10,128,128],
-                    'scheduler': "Default Triangular",
-                    'unfreeze_layers': [],
-                    'dropout_ratio': [],
-                    'freeze_layers': [(self.model.bert.embeddings,nn.Module),],
-                    'accu_gradient_step': None,
-                    'epoch': 20 if mode=="EXP" else 1,
-                },
-
             ]
         return self.params
 
@@ -633,9 +605,9 @@ if __name__ == '__main__':
     G.logger.info( '%s: calling main function ... ' % os.path.basename(__file__))
 
     gappl = GAPPipeline()
-    # gappl.do_cycles_train()
+    gappl.do_cycles_train()
 
-    target_path = '/home/gody7334/gender-pronoun/input/result/000_BASELINE/2019-03-21_00-27-14/check_point/stage4_snapshot_basebot_0.506462.pth'
-    gappl.do_prediction(target_path)
+    # target_path = '/home/gody7334/gender-pronoun/input/result/000_BASELINE/2019-03-21_00-27-14/check_point/stage4_snapshot_basebot_0.506462.pth'
+    # gappl.do_prediction(target_path)
 
     G.logger.info('success!')

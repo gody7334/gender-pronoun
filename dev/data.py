@@ -7,7 +7,7 @@ from pytorch_pretrained_bert import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
 from utils.project import Global as G
 
-BERT_MODEL = 'bert-base-uncased'
+BERT_MODEL = 'bert-large-uncased'
 CASED = False
 
 G.logger.info("BERT_MODEL %s", BERT_MODEL)
@@ -141,12 +141,8 @@ class GAPDataLoader():
         tokenizer = BertTokenizer.from_pretrained(
             BERT_MODEL,
             do_lower_case=CASED,
-            never_split = ("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]", "[A]", "[B]", "[P]")
+            never_split = ("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")
         )
-        # These tokens are not actually used, so we can assign arbitrary values.
-        tokenizer.vocab["[A]"] = -1
-        tokenizer.vocab["[B]"] = -1
-        tokenizer.vocab["[P]"] = -1
         self.tokenizer = tokenizer
 
     def get_dataloader(self):
