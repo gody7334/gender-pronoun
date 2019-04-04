@@ -1,80 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-import torch.nn.functional as F
 from pytorch_pretrained_bert.modeling import BertModel
 from allennlp.modules.span_extractors import SelfAttentiveSpanExtractor, EndpointSpanExtractor
-
-class score(torch.nn.Module):
-
-    def __init__(self, embed_dim, hidden_dim):
-        super(score, self).__init__()
-        self.score = torch.nn.Sequential(
-                     torch.nn.Linear(embed_dim, hidden_dim),
-                     torch.nn.ReLU(inplace=True),
-                     torch.nn.Dropout(0.6),
-                     torch.nn.Linear(hidden_dim, 1))
-
-    def forward(self, x):
-        return self.score(x)
-
-class mentionpair_score(torch.nn.Module):
-
-    def __init__(self, input_dim, hidden_dim):
-        super(mentionpair_score, self).__init__()
-        self.score = score(input_dim, hidden_dim)
-
-    def forward(self, g1, g2, dist_embed):
-
-        element_wise = g1 * g2
-        pair_score   = self.score(torch.cat((g1, g2, element_wise, dist_embed), dim=-1))
-
-        return pair_score
-
-class score_model(torch.nn.Module):
-
-    def __init__(self, bert_model=''):
-        super(score_model, self).__init__()
-
-        if bert_model in ("bert-base-uncased", "bert-base-cased"):
-            self.bert_hidden_size = 768
-        elif bert_model in ("bert-large-uncased", "bert-large-cased"):
-            self.bert_hidden_size = 1024
-        else:
-            raise ValueError("Unsupported BERT model.")
-
-        self.buckets_embedding_size = 40
-        self.score_hidden_size = 256
-
-        self.buckets        = [1, 2, 3, 4, 5, 8, 16, 32, 64]
-        self.bert           = BertModel.from_pretrained(bert_model)
-        self.embedding      = torch.nn.Embedding(len(self.buckets)+1,
-                                self.buckets_embedding_size)
-        self.span_extractor = EndpointSpanExtractor(self.bert_hidden_size, "x,y,x*y")
-        self.pair_score     = mentionpair_score(self.bert_hidden_size*3*3 \
-                                + self.buckets_embedding_size,
-                                self.score_hidden_size)
-
-    def forward(self, sent, offsets, distP_A, distP_B):
-
-        bert_output, _   = self.bert(sent, output_all_encoded_layers=False) # (batch_size, max_len, 768)
-        #Distance Embeddings
-        distPA_embed     = self.embedding(distP_A)
-        distPB_embed     = self.embedding(distP_B)
-
-        #Span Representation
-        span_repres     = self.span_extractor(bert_output, offsets) #(batch, 3, 2304)
-        span_repres     = torch.unbind(span_repres, dim=1) #[A: (bath, 2304), B: (bath, 2304), Pronoun:  (bath, 2304)]
-        span_norm = []
-        for i in range(len(span_repres)):
-            span_norm.append(F.normalize(span_repres[i], p=2, dim=1)) #normalizes the words embeddings
-
-        ap_score = self.pair_score(span_norm[2], span_norm[0], distPA_embed)
-        bp_score = self.pair_score(span_norm[2], span_norm[1], distPB_embed)
-        nan_score = torch.zeros_like(ap_score)
-        output = torch.cat((ap_score, bp_score, nan_score), dim=1)
-
-        return output
 
 class Head(nn.Module):
     """The MLP submodule"""

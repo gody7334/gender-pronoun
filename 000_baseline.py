@@ -50,7 +50,8 @@ class GAPPipeline:
         '''
         G.logger.info("load model")
         # self.model = GAPModel_CheckPoint(BERT_MODEL, torch.device("cuda:0"))
-        self.model = GAPModel(BERT_MODEL, torch.device("cuda:0"))
+        # self.model = GAPModel(BERT_MODEL, torch.device("cuda:0"))
+        self.model = score_model()
 
         G.logger.info("load gapdl")
         self.gapdl = GAPDataLoader()
@@ -68,7 +69,7 @@ class GAPPipeline:
 
         G.logger.info("create onecycle")
         self.oc = OneCycle(self.bot)
-        self.stage_params = PipelineParams(self.model).finetune_bert()
+        self.stage_params = PipelineParams(self.model).baseline()
 
     def do_cycles_train(self):
         stage=0
@@ -252,7 +253,10 @@ class PipelineParams():
                     'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
                     'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
                     'freeze_layers': [],
                     'dropout_ratio': [],
                     'accu_gradient_step': None,
@@ -262,17 +266,23 @@ class PipelineParams():
                     'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
                     'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
                     'freeze_layers': [],
                     'dropout_ratio': [],
                     'accu_gradient_step': None,
                     'epoch': 10 if mode=="EXP" else 1,
                 },
                 {
-                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4),
+                    'optimizer': Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4),
                     'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
                     'freeze_layers': [],
                     'dropout_ratio': [],
                     'accu_gradient_step': None,
@@ -282,7 +292,23 @@ class PipelineParams():
                     'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4),
                     'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
+                    'freeze_layers': [],
+                    'dropout_ratio': [],
+                    'accu_gradient_step': None,
+                    'epoch': 20 if mode=="EXP" else 1,
+                },
+                {
+                    'optimizer': Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4),
+                    'batch_size': [20,128,128],
+                    'scheduler': "Default Triangular",
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
                     'freeze_layers': [],
                     'dropout_ratio': [],
                     'accu_gradient_step': None,
@@ -292,7 +318,10 @@ class PipelineParams():
                     'optimizer': Adam(self.model.parameters(),lr=1e-5,weight_decay=1e-4),
                     'batch_size': [20,128,128],
                     'scheduler': "Default Triangular",
-                    'unfreeze_layers': [(self.model.head, nn.Module)],
+                    'unfreeze_layers': [(self.model.embedding, nn.Module),
+                                        (self.model.span_extractor, nn.Module),
+                                        (self.model.pair_score, nn.Module),
+                                        ],
                     'freeze_layers': [],
                     'dropout_ratio': [],
                     'accu_gradient_step': None,
