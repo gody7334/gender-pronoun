@@ -7,7 +7,7 @@ import torch.nn as nn
 from pytorch_pretrained_bert import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
 from keras.preprocessing.sequence import pad_sequences
-# from utils.project import Global as G
+from utils.project import Global as G
 from spacy.lang.en import English
 from tqdm import tqdm
 from ast import literal_eval
@@ -15,8 +15,8 @@ from ast import literal_eval
 BERT_MODEL = 'bert-base-uncased'
 CASED = False
 
-# G.logger.info("BERT_MODEL %s", BERT_MODEL)
-# G.logger.info("CASED %s", str(CASED))
+G.logger.info("BERT_MODEL %s", BERT_MODEL)
+G.logger.info("CASED %s", str(CASED))
 
 def prepare_dist_df(df):
     nlp = English()

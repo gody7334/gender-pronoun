@@ -43,8 +43,8 @@ class score_model(torch.nn.Module):
         else:
             raise ValueError("Unsupported BERT model.")
 
-        self.buckets_embedding_size = 40
-        self.score_hidden_size = 256
+        self.buckets_embedding_size = 20
+        self.score_hidden_size = 128
 
         self.buckets        = [1, 2, 3, 4, 5, 8, 16, 32, 64]
         self.bert           = BertModel.from_pretrained(bert_model)
