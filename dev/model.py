@@ -71,6 +71,9 @@ class score_model(torch.nn.Module):
 
         ap_score = self.pair_score(span_norm[2], span_norm[0], distPA_embed)
         bp_score = self.pair_score(span_norm[2], span_norm[1], distPB_embed)
+
+        # loss is calculated using "Softmax", if nether a or b,
+        # ap_score and bp_score will be negative, nan_score 0 will be the biggest value
         nan_score = torch.zeros_like(ap_score)
         output = torch.cat((ap_score, bp_score, nan_score), dim=1)
 

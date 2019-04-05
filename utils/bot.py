@@ -49,8 +49,8 @@ class OneCycle:
     def update_bot(self,
         train_loader=None, val_loader=None,
         optimizer=None, criterion=None, scheduler=None,
-        pretrained_path='', unfreeze_layers=[], freeze_layers=[],
-        dropout_ratio=[],
+        unfreeze_layers=[], freeze_layers=[], dropout_ratio=[],
+        pretrained_path='', continue_step=0,
         lrs=[], n_epoch=None, n_step=None, stage='',
         accu_gradient_step=None):
 
@@ -61,7 +61,12 @@ class OneCycle:
         self.n_step = n_step
         self.n_epoch = n_epoch
 
-        if pretrained_path != '': self.bot.load_model(pretrained_path);
+        if pretrained_path != '':
+            assert continue_step != 0; \
+                    "Please assign step for continue training"
+            self.bot.load_model(pretrained_path);
+            self.bot.step = continue_step
+
         if train_loader is not None: self.bot.train_loader=train_loader; print('reset train_loader: '+ str(train_loader));
         if val_loader is not None: self.bot.val_loader=val_loader; print('reset val_loader: '+ str(val_loader));
         if optimizer is not None: self.bot.optimizer=optimizer; print('reset optimizer: '+ str(optimizer)+' lr, etc.. will also be reset');
