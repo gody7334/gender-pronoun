@@ -79,6 +79,24 @@ class score_model(torch.nn.Module):
 
         return output
 
+    def set_dropout_prob(self, m, prob=0.0):
+        '''
+        m: node start to search
+        '''
+        def children(m):
+            return m if isinstance(m, (list, tuple)) else list(m.children())
+
+        def apply_leaf(m, f):
+            c = children(m)
+            if isinstance(m, nn.modules.dropout._DropoutNd):
+                m.p = prob
+            if len(c) > 0:
+                for l in c:
+                    apply_leaf(l, f)
+
+        apply_leaf(m, prob)
+
+
 class Head(nn.Module):
     """The MLP submodule"""
     def __init__(self, bert_hidden_size: int):

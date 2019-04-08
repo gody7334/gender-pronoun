@@ -191,8 +191,8 @@ class BaseBot:
         '''
         criterion_scores = self.criterion(outputs, targets).data.cpu().numpy()
         score = np.mean(criterion_scores)
-        G.logger.info("hold on validation score: %.6f", score)
-        G.logger.tb_scalars("losses", {"Holdon": score}, self.step)
+        G.logger.info("holdout validation score: %.6f", score)
+        G.logger.tb_scalars("losses", {"Holdout": score}, self.step)
 
         return score
 

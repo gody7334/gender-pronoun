@@ -1,8 +1,10 @@
 import logging
 import torch
 import torch.nn as nn
+import numpy as np
 from pathlib import Path
 from utils.bot import BaseBot
+from utils.project import Global as G
 
 
 class GAPBot(BaseBot):
@@ -12,6 +14,32 @@ class GAPBot(BaseBot):
 
     def extract_prediction(self, tensor):
         return tensor
+
+    # def metrics(self, outputs, targets):
+        # '''
+        # override if needed for different metrics
+        # '''
+        # criterion_scores = self.criterion(outputs, targets).data.cpu().numpy()
+        # score = np.mean(criterion_scores)
+        # G.logger.info("holdout validation score: %.6f", score)
+        # G.logger.tb_scalars("losses", {"Holdout": score}, self.step)
+
+        # for t in np.arange(0.9,1.0,0.01):
+            # import ipdb; ipdb.set_trace();
+            # outputs_sm = nn.functional.softmax(outputs,dim=1)
+            # outputs_t_idx = torch.sum((outputs_sm>t).float()*1,dim=1).unsqueeze(1)
+
+            # outputs_t = ((outputs_sm > t).float() * 0.999) + ((outputs_sm <= t).float() * 0.0005)+1e-8
+            # outputs_t = outputs_t * outputs_t_idx + outputs_sm * (1-outputs_t_idx)
+
+            # outputs_t = torch.log(outputs_t)
+            # loss = nn.NLLLoss()
+            # criterion_scores = loss(outputs_t, targets).data.cpu().numpy()
+            # score = np.mean(criterion_scores)
+            # G.logger.info("threshold: %.2f, holdout validation score: %.6f", t, score)
+
+        # return score
+
 
     ## keep best
     # def snapshot(self, loss):
