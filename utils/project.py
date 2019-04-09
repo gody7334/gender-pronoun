@@ -15,13 +15,18 @@ IDENTIFIER   = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 class Global():
     proj = None
     logger = None
+    exp = None
 
     def __init__(self, experiment, description, gpu_id='0',*kwargs):
         Environment(gpu=gpu_id)
+        Global.exp = experiment
         Global.proj = Project(experiment, description)
         Global.proj.backup_project_as_zip()
         Global.logger = Logger(experiment, Global.proj.proj_save_path, logging.INFO,
                              use_tensorboard=True, echo=True)
+    def reset_logger(folds, fold):
+        Global.logger = Logger(Global.exp, Global.proj.proj_save_path, logging.INFO,
+                             use_tensorboard=True, echo=True, folds=folds, fold=fold)
 
 class Environment():
     '''
@@ -110,12 +115,14 @@ class Project():
         return
 
 class Logger:
-    def __init__(self, model_name, log_dir, level=logging.INFO, use_tensorboard=False, echo=False):
+    def __init__(self, model_name, log_dir,
+            level=logging.INFO, use_tensorboard=False,
+            echo=False, folds=5, fold=0):
         self.log_dir=log_dir
         self.model_name = model_name
         (Path(log_dir) / "summaries").mkdir(parents=True, exist_ok=True)
         date_str = datetime.now().strftime('%Y%m%d_%H%M')
-        log_file = 'log_{}.txt'.format(date_str)
+        log_file = 'log_cv{}-{}_{}.txt'.format(fold, folds, date_str)
         formatter = logging.Formatter(
             '[[%(asctime)s]] %(message)s',
             datefmt='%m/%d/%Y %I:%M:%S %p'
@@ -139,7 +146,7 @@ class Logger:
             from tensorboardX import SummaryWriter
             # Tensorboard
             self.tbwriter = SummaryWriter(
-                log_dir + "/summaries/" + "{}_{}".format(self.model_name, date_str)
+                log_dir + "/summaries/" + "cv{}-{}_{}_{}".format(fold, folds, self.model_name, date_str)
             )
 
     def info(self, msg, *args):

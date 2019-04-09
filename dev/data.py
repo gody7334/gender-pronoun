@@ -284,20 +284,28 @@ class GAPDataset(Dataset):
 
 class GAPDataLoader():
     def __init__(self,
+            df_train,
+            df_val,
+            df_test,
+            sample_sub,
             train_size=20,
             val_size=128,
             test_size=128):
-        df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv")
-        df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv")
-        df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv")
-        sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
-        assert sample_sub.shape[0] == df_test.shape[0]
+        self.df_train = df_train
+        self.df_val = df_val
+        self.df_test = df_test
+        self.sample_sub = sample_sub
+        # df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv")
+        # df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv")
+        # df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv")
+        # sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
+        # assert sample_sub.shape[0] == df_test.shape[0]
 
         self.tokenizer = None
         self.bert_tokenizer()
-        self.train_ds = GAPDataset(df_train, self.tokenizer)
-        self.val_ds = GAPDataset(df_val, self.tokenizer)
-        self.test_ds = GAPDataset(df_test, self.tokenizer,labeled=True)
+        self.train_ds = GAPDataset(self.df_train, self.tokenizer)
+        self.val_ds = GAPDataset(self.df_val, self.tokenizer)
+        self.test_ds = GAPDataset(self.df_test, self.tokenizer,labeled=True)
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None

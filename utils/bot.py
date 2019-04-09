@@ -137,7 +137,8 @@ class BaseBot:
             self, model, train_loader, val_loader, optimizer, criterion,
             scheduler=None, clip_grad=0, avg_window=AVERAGING_WINDOW,
             batch_idx=0,echo=False, device="cuda:0", use_tensorboard=False,
-            snapshot_policy='validate', stage='0', accu_gradient_step=1):
+            snapshot_policy='validate', stage='0', accu_gradient_step=1,
+            folds=5, fold=0):
 
         assert model is not None
         assert optimizer is not None
@@ -150,6 +151,8 @@ class BaseBot:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.scheduler = scheduler
+        self.folds = folds
+        self.fold = fold
 
         self.device = device
         self.avg_window = avg_window
@@ -244,7 +247,8 @@ class BaseBot:
             loss_str = self.loss_format % loss
             target_path = (
                 self.checkpoint_dir /
-                "stage{}_snapshot_{}_{}.pth".format(self.stage, self.name, loss_str))
+                "cv{}-{}_stage{}_snapshot_{}_{}.pth"\
+                        .format(self.fold, self.folds, self.stage, self.name, loss_str))
             self.best_performers.append((loss, target_path, self.step))
             self.logger.info("Saving checkpoint %s...", target_path)
             torch.save(self.model.state_dict(), target_path)

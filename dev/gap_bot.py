@@ -15,6 +15,21 @@ class GAPBot(BaseBot):
     def extract_prediction(self, tensor):
         return tensor
 
+    def predict_avg(self, loader, checkpoint_path, regex_pattern=''):
+        '''
+        avg ensemble
+        '''
+        preds = []
+
+        # Iterating through checkpoints
+        for i in range(k):
+            target = self.best_performers[i][1]
+            self.logger.info("Loading %s", format(target))
+            self.load_model(target)
+            preds.append(self.predict(loader).unsqueeze(0))
+        return torch.cat(preds, dim=0).mean(dim=0)
+
+
     # def metrics(self, outputs, targets):
         # '''
         # override if needed for different metrics
