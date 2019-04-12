@@ -280,7 +280,7 @@ class GAPDataset(Dataset):
 
         if self.labeled:
             return index_token, offset, distP_A, distP_B, label
-        return index_token, offset, distP_A, distP_B, None
+        return index_token, offset, distP_A, distP_B
 
 class GAPDataLoader():
     def __init__(self,
@@ -295,6 +295,7 @@ class GAPDataLoader():
         self.df_val = df_val
         self.df_test = df_test
         self.sample_sub = sample_sub
+        self.df_submission = None
         # df_train = pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv")
         # df_val = pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv")
         # df_test = pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv")
@@ -306,11 +307,25 @@ class GAPDataLoader():
         self.train_ds = GAPDataset(self.df_train, self.tokenizer)
         self.val_ds = GAPDataset(self.df_val, self.tokenizer)
         self.test_ds = GAPDataset(self.df_test, self.tokenizer,labeled=True)
+        self.submission_ds = None
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
+        self.submission_loader = None
 
         self.update_batch_size(train_size,val_size,test_size)
+
+    def set_submission_dataloader(self, df_submission):
+        self.df_submission = df_submission
+        self.submission_ds = GAPDataset(self.df_submission, self.tokenizer,labeled=False)
+        self.submission_loader = DataLoader(
+            self.submission_ds,
+            collate_fn = collate_examples,
+            batch_size=self.test_size,
+            num_workers=4,
+            pin_memory=True,
+            shuffle=False
+        )
 
     def update_batch_size(self,
             train_size=20,
@@ -356,6 +371,7 @@ class GAPDataLoader():
             pin_memory=True,
             shuffle=False
         )
+
 
 def ut_gap_dataloader():
 

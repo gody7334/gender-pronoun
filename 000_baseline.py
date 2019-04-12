@@ -1,15 +1,15 @@
 ############ Setup Project ######################
 import os
 import matplotlib
+from utils.project import ArgParser as A; A();
 from utils.project import Global as G
-gpu_id = '0'
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" # so the IDs match nvidia-smi
-os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
+os.environ['CUDA_VISIBLE_DEVICES'] = A.gpu_id
 matplotlib.use('Agg')
 
-EXPERIMENT="002_CV_ALL"
+EXPERIMENT="003_BLEND"
 DISCRIPTION='create baseline'
-G(EXPERIMENT, DISCRIPTION, gpu_id)
+G(EXPERIMENT, DISCRIPTION, A.gpu_id)
 
 mode="EXP"
 
@@ -45,18 +45,21 @@ from dev.model import *
 ####################################################
 
 class GAPPipeline:
-    def __init__(self, fold=0, folds=5, cv_random_state=2019):
+    def __init__(self, fold=0, folds=5, holdout_ratio=0.1, cv_random_state=2019):
         '''
         Gradient Checkpoint model need turn off Dropout, and BatchNorm
         Accumulated Gradient need turn off BatchNorm
         '''
         self.fold = fold
         self.folds = folds
+        self.holdout_ratio = holdout_ratio
         self.cv_random_state = cv_random_state
         self.train_df = None
         self.val_df = None
         self.holdout_df = None
         self.sample_sub = None
+        self.submission_df = None
+        self.outputs = None
 
         assert fold < folds; "fold cannot be larger than total folds"
         G.logger.info("cv split")
@@ -69,6 +72,9 @@ class GAPPipeline:
 
         G.logger.info("load gapdl")
         self.gapdl = GAPDataLoader(self.train_df, self.val_df, self.holdout_df, self.sample_sub)
+
+        if A.predict_csv!='':
+            self.gapdl.set_submission_dataloader(self.submission_df)
 
         G.logger.info("create bot")
         self.bot = GAPBot(
@@ -113,16 +119,25 @@ class GAPPipeline:
         gap_train = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv",index_col=0))
         gap_val = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv",index_col=0))
         gap_test = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv",index_col=0))
-        sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv")
+        sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv",index_col = "ID")
 
-        gap_all = pd.concat([gap_train, gap_val, gap_test],ignore_index=True)
-        train, holdout = train_test_split(gap_all, test_size=0.15,
-                random_state=self.cv_random_state, shuffle=True, stratify=gap_all['target'])
-        train = train.reset_index(drop=True)
-        holdout = holdout.reset_index(drop=True)
+        if self.holdout_ratio==0:
+            #### CV train val, use original develop set as test set
+            train = pd.concat([gap_train, gap_val],ignore_index=True)
+            train = train.reset_index(drop=True)
+            holdout = gap_test.reset_index(drop=True)
+        else:
+            ##### CV all
+            gap_all = pd.concat([gap_train, gap_val, gap_test],ignore_index=True)
+            train, holdout = train_test_split(gap_all, test_size=self.holdout_ratio,
+                    random_state=self.cv_random_state, shuffle=True, stratify=gap_all['target'])
+            train = train.reset_index(drop=True)
+            holdout = holdout.reset_index(drop=True)
+
         Kfold = StratifiedKFold(n_splits=self.folds,
                 random_state=self.cv_random_state,shuffle=True).split(train, train['target'])
         self.holdout_df = holdout
+        self.submission_df = pd.read_csv(A.predict_csv, index_col=0) if A.predict_csv!='' else None
         self.sample_sub = sample_sub
 
         for n_fold, (train_index, val_index) in enumerate(Kfold):
@@ -219,8 +234,22 @@ class GAPPipeline:
         if target_path != '':
             self.bot.load_model(target_path)
 
-        outputs, targets =  self.bot.predict(self.gapdl.test_loader, return_y=True)
-        self.bot.metrics(outputs, targets)
+        self.outputs, targets = self.bot.predict(self.gapdl.test_loader, return_y=True)
+        self.bot.metrics(self.outputs, targets)
+
+    def do_ensemble(self, checkpoint_path='', pattern='', eval=False):
+        if eval:
+            self.outputs, targets = self.bot.predict_avg\
+                    (self.gapdl.test_loader, checkpoint_path, pattern, eval)
+            self.bot.metrics(self.outputs, targets)
+        else:
+            self.outputs = self.bot.predict_avg\
+                    (self.gapdl.submission_loader, checkpoint_path, pattern, eval)
+
+    def do_submission(self):
+        # Write the prediction to file for submission
+
+        self.bot.submission(nn.functional.softmax(self.outputs,dim=1), self.sample_sub)
 
 class PipelineParams():
     def __init__(self,model):
@@ -945,13 +974,31 @@ class PipelineParams():
 if __name__ == '__main__':
     G.logger.info( '%s: calling main function ... ' % os.path.basename(__file__))
 
-    for i in range(5):
-        G.reset_logger(folds=5, fold=i)
-        gappl = GAPPipeline(fold=i, folds=5)
+    if A.mode == 'train':
+        G.reset_logger(folds=A.split, fold=A.fold)
+        gappl = GAPPipeline(fold=A.fold, folds=A.split, holdout_ratio=A.holdout)
         gappl.do_cycles_train()
 
-    # path = '/home/gody7334/gender-pronoun/input/result/000_BASELINE/'\
-            # +'2019-04-06_11-41-43'+'/check_point/'+'stage3_snapshot_basebot_0.348980.pth'
-    # gappl.do_prediction(path)
+    ###### ensemble prediction ########
+    if A.mode == 'ensemble_eval':
+        # path =  '/home/gody7334/gender-pronoun/input/result/002_CV_ALL/'\
+                # +'2019-04-09_09-52-02'+'/check_point/'
+                # +'cv0-5_stage3_snapshot_basebot_0.348980.pth'
+        # pattern = 'cv[0-4]-5_stage*_snapshot_basebot_*.pth'
+        path = A.checkpoint_path
+        pattern = A.models_pattern
+        gappl = GAPPipeline(fold=A.fold, folds=A.split, holdout_ratio=A.holdout)
+        gappl.do_ensemble(path, pattern, eval=True)
+
+    if A.mode == 'ensemble_pred':
+        path = A.checkpoint_path
+        pattern = A.models_pattern
+        gappl = GAPPipeline(fold=A.fold, folds=A.split, holdout_ratio=A.holdout)
+        gappl.do_ensemble(path, pattern, eval=False)
+        gappl.do_submission()
+
+    if A.mode == 'blending_pred':
+        pass
+
 
     G.logger.info('success!')

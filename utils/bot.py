@@ -424,9 +424,9 @@ class BaseBot:
             for *input_tensors, y_local in tqdm(loader):
                 input_tensors = [x.to(self.device) for x in input_tensors]
                 outputs.append(self.predict_batch(input_tensors).cpu())
-                y_global.append(y_local.cpu())
+                if return_y: y_global.append(y_local.cpu());
             outputs = torch.cat(outputs, dim=0)
-            y_global = torch.cat(y_global, dim=0)
+            if return_y: y_global = torch.cat(y_global, dim=0)
         if return_y:
             return outputs, y_global
         return outputs

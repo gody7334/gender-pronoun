@@ -4,6 +4,7 @@ import torch
 import random
 from datetime import datetime
 import shutil
+import argparse
 import logging
 from pathlib import Path
 
@@ -11,6 +12,44 @@ PROJECT_NAME = 'gender-pronoun-resolution'
 PROJECT_PATH = '/home/gody7334/Project/tensorflow/ipython/gender-pronoun-resolution/bert_mlp/'
 PROJECT_BACKUP_FOLDER = '/dataset/gender-pronoun-resolution/result/'
 IDENTIFIER   = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+class ArgParser():
+    gpu_id = '0'
+    mode = 'train'
+    split = 5
+    fold = 0
+    holdout = 0.1
+    checkpoint_path = ''
+    models_pattern = ''
+    predict_csv = ''
+
+    def __init__(self):
+        ap = argparse.ArgumentParser()
+        ap.add_argument("-g", "--gpu_id", default='0', type=str, help="gpu id")
+        ap.add_argument("-m","--mode", default='train',
+                choices=['train','ensemble_eval','ensemble_pred','blending_pred'],
+                help="mode to run")
+        ap.add_argument("-s", "--split", default=5, help="how many splits in CV")
+        ap.add_argument("-f", "--fold", default=0, help="which fold in CV")
+        ap.add_argument("-ho", "--holdout", default=0.1, type=float, help="how many data as holdout set")
+        ap.add_argument("-cp", "--checkpoint_path", default="", help="checkpoint path for eval or pred")
+        ap.add_argument("-mp", "--models_pattern", default="*.pth", help="linux wildscard file pattern")
+        ap.add_argument("-p", "--predict_csv", default='', help="predict_csv")
+        args = vars(ap.parse_args())
+
+        ArgParser.gpu_id = args['gpu_id']
+        ArgParser.mode = args['mode']
+        ArgParser.split = args['split']
+        ArgParser.fold = args['fold']
+        ArgParser.holdout = args['holdout']
+        ArgParser.checkpoint_path = args['checkpoint_path']
+        ArgParser.models_pattern = args['models_pattern']
+        ArgParser.predict_csv = args['predict_csv']
+
+        if args['mode'] in ['ensemble_eval','ensemble_pred','blending_pred']:
+            assert args['checkpoint_path'] != ''; 'model checkpoint path for eval/pred'
+        if args['mode'] in ['ensemble_pred','blending_pred']:
+            assert args['predict_csv'] != ''; 'csv file for prediction'
 
 class Global():
     proj = None

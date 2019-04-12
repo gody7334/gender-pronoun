@@ -2,6 +2,7 @@ import logging
 import torch
 import torch.nn as nn
 import numpy as np
+import glob
 from pathlib import Path
 from utils.bot import BaseBot
 from utils.project import Global as G
@@ -15,19 +16,35 @@ class GAPBot(BaseBot):
     def extract_prediction(self, tensor):
         return tensor
 
-    def predict_avg(self, loader, checkpoint_path, regex_pattern=''):
+    def predict_avg(self, loader, checkpoint_path, pattern='', eval=False):
         '''
         avg ensemble
         '''
         preds = []
+        targets = glob.glob(checkpoint_path+pattern)
 
         # Iterating through checkpoints
-        for i in range(k):
-            target = self.best_performers[i][1]
+        for target in targets:
             self.logger.info("Loading %s", format(target))
             self.load_model(target)
-            preds.append(self.predict(loader).unsqueeze(0))
-        return torch.cat(preds, dim=0).mean(dim=0)
+            if eval:
+                outputs, ys = self.predict(loader, return_y=eval)
+            else:
+                outputs = self.predict(loader, return_y=eval)
+            preds.append(outputs.unsqueeze(0))
+        outputs_avg = torch.cat(preds, dim=0).mean(dim=0)
+
+        if eval:
+            return outputs_avg, ys
+        else:
+            return outputs_avg
+
+
+    def submission(self, outputs, sample_sub):
+        sample_sub["A"] = outputs[:,0]
+        sample_sub["B"] = outputs[:,1]
+        sample_sub["NEITHER"] = outputs[:,2]
+        sample_sub.to_csv(G.proj.files+"submission.csv")
 
 
     # def metrics(self, outputs, targets):
