@@ -7,11 +7,12 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" # so the IDs match nvidia-smi
 os.environ['CUDA_VISIBLE_DEVICES'] = A.gpu_id
 matplotlib.use('Agg')
 
-EXPERIMENT="003_BLEND"
+EXPERIMENT=A.version
 DISCRIPTION='create baseline'
 G(EXPERIMENT, DISCRIPTION, A.gpu_id)
+G.logger.info('arg params:%s', str(A.args))
 
-mode="EXP"
+mode=A.dev_exp
 
 ##################################################
 
@@ -119,7 +120,8 @@ class GAPPipeline:
         gap_train = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-test.csv",index_col=0))
         gap_val = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-validation.csv",index_col=0))
         gap_test = extract_target(pd.read_csv("~/gender-pronoun/input/dataset/gap-development.csv",index_col=0))
-        sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv",index_col = "ID")
+        # sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_1.csv",index_col = "ID")
+        sample_sub = pd.read_csv("~/gender-pronoun/input/dataset/sample_submission_stage_2.csv",index_col = "ID")
 
         if self.holdout_ratio==0:
             #### CV train val, use original develop set as test set
@@ -137,7 +139,8 @@ class GAPPipeline:
         Kfold = StratifiedKFold(n_splits=self.folds,
                 random_state=self.cv_random_state,shuffle=True).split(train, train['target'])
         self.holdout_df = holdout
-        self.submission_df = pd.read_csv(A.predict_csv, index_col=0) if A.predict_csv!='' else None
+        # self.submission_df = pd.read_csv(A.predict_csv, index_col=0) if A.predict_csv!='' else None
+        self.submission_df = pd.read_csv(A.predict_csv, sep='\t') if A.predict_csv!='' else None
         self.sample_sub = sample_sub
 
         for n_fold, (train_index, val_index) in enumerate(Kfold):
@@ -246,9 +249,11 @@ class GAPPipeline:
             self.outputs = self.bot.predict_avg\
                     (self.gapdl.submission_loader, checkpoint_path, pattern, eval)
 
+    def do_blending(self, checkpoint_path='', pattern=''):
+        self.bot.blending(self.gapdl, checkpoint_path, pattern)
+
     def do_submission(self):
         # Write the prediction to file for submission
-
         self.bot.submission(nn.functional.softmax(self.outputs,dim=1), self.sample_sub)
 
 class PipelineParams():
@@ -998,6 +1003,11 @@ if __name__ == '__main__':
         gappl.do_submission()
 
     if A.mode == 'blending_pred':
+        path = A.checkpoint_path
+        pattern = A.models_pattern
+        gappl = GAPPipeline(fold=A.fold, folds=A.split, holdout_ratio=A.holdout)
+        gappl.do_blending(path, pattern)
+
         pass
 
 

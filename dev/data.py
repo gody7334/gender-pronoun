@@ -251,10 +251,12 @@ class GAPDataset(Dataset):
 
         token_df = prepare_token_df(self.df, self.tokenizer)
         dist_df = prepare_dist_df(self.df)
-        self.df = extract_target(pd.concat([self.df, token_df, dist_df], axis=1, sort=False))
 
         if labeled:
+            self.df = extract_target(pd.concat([self.df, token_df, dist_df], axis=1, sort=False))
             self.y = self.df.target.values.astype("uint8")
+        else:
+            self.df = pd.concat([self.df, token_df, dist_df], axis=1, sort=False)
 
     def __len__(self):
         return len(self.df)
@@ -268,7 +270,7 @@ class GAPDataset(Dataset):
         offset = self.df.loc[idx, 'offset']
         # offset = literal_eval(offset)
         offset = np.asarray(offset, dtype='int32')
-        label  = int(self.df.loc[idx, 'target'])
+        if self.labeled: label  = int(self.df.loc[idx, 'target']);
 
         distP_A = self.df.loc[idx, 'D_PA']
         distP_B = self.df.loc[idx, 'D_PB']
@@ -276,7 +278,7 @@ class GAPDataset(Dataset):
         if self.transform:
             index_token = self.transform(index_token)
             offset = self.transform(offset)
-            label = self.transform(label)
+            if self.labeled: label = self.transform(label);
 
         if self.labeled:
             return index_token, offset, distP_A, distP_B, label

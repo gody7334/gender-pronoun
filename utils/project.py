@@ -15,6 +15,8 @@ IDENTIFIER   = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
 class ArgParser():
     gpu_id = '0'
+    version = '000_BASELINE'
+    dev_exp = 'EXP'
     mode = 'train'
     split = 5
     fold = 0
@@ -22,22 +24,34 @@ class ArgParser():
     checkpoint_path = ''
     models_pattern = ''
     predict_csv = ''
+    hyperopt_trials = 0
+    args = None
 
     def __init__(self):
         ap = argparse.ArgumentParser()
         ap.add_argument("-g", "--gpu_id", default='0', type=str, help="gpu id")
+        ap.add_argument("-v","--version", default='000_BASELINE',
+                help="version label")
+        ap.add_argument("-de","--dev_exp", default='EXP',
+                choices=['DEV', 'EXP'],
+                help="development or experimenet mode")
         ap.add_argument("-m","--mode", default='train',
                 choices=['train','ensemble_eval','ensemble_pred','blending_pred'],
                 help="mode to run")
         ap.add_argument("-s", "--split", default=5, help="how many splits in CV")
-        ap.add_argument("-f", "--fold", default=0, help="which fold in CV")
+        ap.add_argument("-f", "--fold", default=0, type=int, help="which fold in CV")
         ap.add_argument("-ho", "--holdout", default=0.1, type=float, help="how many data as holdout set")
         ap.add_argument("-cp", "--checkpoint_path", default="", help="checkpoint path for eval or pred")
         ap.add_argument("-mp", "--models_pattern", default="*.pth", help="linux wildscard file pattern")
         ap.add_argument("-p", "--predict_csv", default='', help="predict_csv")
+        ap.add_argument("-t", "--hyperopt_trials", default=100, type=int, help="how many trials hyperopts will run")
+
         args = vars(ap.parse_args())
+        ArgParser.args = args
 
         ArgParser.gpu_id = args['gpu_id']
+        ArgParser.version = args['version']
+        ArgParser.dev_exp = args['dev_exp']
         ArgParser.mode = args['mode']
         ArgParser.split = args['split']
         ArgParser.fold = args['fold']
@@ -45,6 +59,7 @@ class ArgParser():
         ArgParser.checkpoint_path = args['checkpoint_path']
         ArgParser.models_pattern = args['models_pattern']
         ArgParser.predict_csv = args['predict_csv']
+        ArgParser.hyperopt_trials = args['hyperopt_trials']
 
         if args['mode'] in ['ensemble_eval','ensemble_pred','blending_pred']:
             assert args['checkpoint_path'] != ''; 'model checkpoint path for eval/pred'

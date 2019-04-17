@@ -2,9 +2,9 @@
 # coding: utf-8
 
 # ## https://www.kaggle.com/hung96ad/pytorch-starter
-# * LSTM, gru, 
-# * bidirection, 
-# * attention on 2 gru, 
+# * LSTM, gru,
+# * bidirection,
+# * attention on 2 gru,
 # * max pool and global pool on last layer,
 # * concatinate 2 attention and 2 pool
 # * fn, relu, fn, sigmoid
@@ -119,9 +119,9 @@ def RF_search(X_train, y_train, X_test, y_test):
         clf = RandomForestClassifier(n_estimators=hyperparams['n_estimators'],
                                  criterion='gini',
                                  max_depth=hyperparams['max_depth'],
-                                 random_state=0, 
-                                 n_jobs=10, 
-                                 min_samples_split=50, 
+                                 random_state=0,
+                                 n_jobs=10,
+                                 min_samples_split=50,
                                  min_samples_leaf=100,
                                  min_weight_fraction_leaf=0,
                                  max_features='auto',
@@ -141,7 +141,7 @@ def RF_search(X_train, y_train, X_test, y_test):
         print(f1)
 
         return 1-f1
-    
+
     # Create the domain space
     hyperparams = {
         'n_estimators': hp.choice('n_estimators', np.arange(10,200)),
@@ -149,9 +149,9 @@ def RF_search(X_train, y_train, X_test, y_test):
     }
     tpe_algo = tpe.suggest
     tpe_trials = Trials()
-    
+
     # Run 2000 evals with the tpe algorithm
-    tpe_best = fmin(fn=Objective, space=hyperparams, algo=tpe_algo, trials=tpe_trials, 
+    tpe_best = fmin(fn=Objective, space=hyperparams, algo=tpe_algo, trials=tpe_trials,
                     max_evals=100, rstate= np.random.RandomState(50))
 
     print(tpe_best)
@@ -182,7 +182,7 @@ samples = []
 for _ in range(10000):
     samples.append(sample(hyperparams['n_estimators']))
 # Histogram of the values
-plt.hist(samples, bins = 20, edgecolor = 'black'); 
+plt.hist(samples, bins = 20, edgecolor = 'black');
 plt.xlabel('x'); plt.ylabel('Frequency'); plt.title('Domain Space');
 
 
@@ -207,11 +207,11 @@ y_train = train_y
 X_test = test_local_pred_models.transpose([1,2,0])[epoch,:,:]
 y_test = test_local_target_models.transpose([1,2,0])[epoch,:,0]
 
-RF_Objective(X_train=X_train, 
-             y_train=y_train, 
-             X_test=X_test, 
-             y_test=y_test, 
-             n_estimators=10, 
+RF_Objective(X_train=X_train,
+             y_train=y_train,
+             X_test=X_test,
+             y_test=y_test,
+             n_estimators=10,
              max_depth=10)
 
 
@@ -220,18 +220,18 @@ RF_Objective(X_train=X_train,
 
 from sklearn.ensemble import RandomForestClassifier
 for i in range(train_preds_all.shape[0]):
-    clf = RandomForestClassifier(n_estimators=100, 
+    clf = RandomForestClassifier(n_estimators=100,
                                  max_depth=10,
-                                 random_state=0, 
-                                 n_jobs=10, 
-                                 min_samples_split=50, 
+                                 random_state=0,
+                                 n_jobs=10,
+                                 min_samples_split=50,
                                  min_samples_leaf=100)
     X_train = train_preds_all[i].transpose([1,0])
     y_train = train_y
     clf.fit(X_train, y_train)
     y_prob = clf.predict_proba(X_train)
     threshold = threshold_search(y_train, y_prob[:,1])
-    
+
     X_test = np.array(test_local_pred_models).transpose([1,2,0])[i]
     y_test = np.array(test_local_target_models).transpose([1,2,0])[i,:,0]
     y_prob = clf.predict_proba(X_test)[:,1]
@@ -249,15 +249,15 @@ early_stopping_rounds = 100
 
 # for i in range(1):
 for i in range(train_preds_all.shape[0]):
-    
+
     params = { 'tree_method':'gpu_hist', 'predictor':'gpu_predictor' }
     alg = XGBClassifier(learning_rate=0.01, n_estimators=500, max_depth=8,
                     min_child_weight=1.0, gamma=0.2, subsample=0.6, colsample_bytree=0.2,
                     objective='binary:logistic', nthread=4, scale_pos_weight=1, seed=27, **params)
-    
+
     X_train = train_preds_all[i].transpose([1,0])
     y_train = train_y
-    
+
     if useTrainCV:
         print("Start Feeding Data")
         xgb_param = alg.get_xgb_params()
@@ -266,12 +266,12 @@ for i in range(train_preds_all.shape[0]):
         cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
                           early_stopping_rounds=early_stopping_rounds)
         alg.set_params(n_estimators=cvresult.shape[0])
-        
+
     # print('Start Training')
     alg.fit(X_train, y_train, eval_metric='auc', verbose=True)
     y_prob = alg.predict_proba(X_train)
     threshold = threshold_search(y_train, y_prob[:,1])
-    
+
     # print("Start Predicting")
     X_test = np.array(test_local_pred_models).transpose([1,2,0])[i]
     y_test = np.array(test_local_target_models).transpose([1,2,0])[i,:,0]
@@ -307,14 +307,14 @@ for i in range(train_preds_all.shape[0]):
         'max_depth': -1,
         'learning_rate': 0.05,
         'metric': 'l2',
-        'num_boost_round':10000, 
+        'num_boost_round':10000,
     }
     clf = lgb.LGBMClassifier(**lgb_params)
     clf.fit(
         X_train,
         y_train
     )
-        
+
     y_prob = clf.predict_proba(X_train)
     threshold = threshold_search(y_train, y_prob[:,1])
 
@@ -390,7 +390,7 @@ def plot_confusion_matrix(cm, classes,
 
 class_names = ['sincere','non-sincere']
 for i in range(len(test_local_pred_models_mean)):
-    cnf_matrix = confusion_matrix(test_local_target_, 
+    cnf_matrix = confusion_matrix(test_local_target_,
                                   np.array(test_local_pred_models_mean[i]) > thresholds[i]['threshold'])
     plt.figure(i*2)
     plot_confusion_matrix(cnf_matrix, classes=class_names,
